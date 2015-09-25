@@ -7,6 +7,14 @@ Installs RVM role for Ansible
 ```sh
 $ ansible-galaxy install rvm_io.rvm1-ruby
 ```
+
+### Remote server setup
+FreeBSD does not come with python. Install it with
+
+```sh
+# pkg install python
+```
+
 ### Setup
 Edit the vars in the ```hosts``` file as you need.
 ### Launch
