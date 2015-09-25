@@ -1,0 +1,29 @@
+---
+- hosts: webservers
+  remote_user: "{{ app_user }}"
+  become: yes
+  become_user: root
+  become_method: su
+  tasks:
+  - name: ensure nginx installed
+    pkgng:
+      pkg: nginx
+      state: present
+  - name: write config file
+    template:
+      src: templates/nginx_conf.j2
+      dest: /usr/local/etc/nginx/nginx.conf
+    notify:
+    - restart nginx
+  - name: ensure postgresql is on rc.conf
+    lineinfile: dest=/etc/rc.conf line='nginx_enable="YES"'
+  - name: ensure nginx running
+    service: 
+      name: nginx
+      state: running
+
+  handlers:
+    - name: restart nginx
+      service: 
+        name: nginx
+        state: restarted

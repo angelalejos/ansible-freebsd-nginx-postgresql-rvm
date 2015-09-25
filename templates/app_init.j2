@@ -1,0 +1,58 @@
+#!/bin/sh 
+
+# PROVIDE: {{ app_name }}
+# REQUIRE: LOGIN postgresql
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name={{ app_name }}
+rcvar=`set_rcvar`
+
+#rc_debug="YES"
+
+# RVM wrappers
+
+app_dir="/home/{{ app_user }}/{{ app_name }}/current"
+
+pumactl="/usr/local/bin/sudo -u {{ app_user }} /home/{{ app_user }}/.rvm/wrappers/{{ ruby_version }}/pumactl"
+puma_config="-C ${app_dir}/config/puma.rb"
+
+prova_user={{ app_user }}
+prova_chdir=$app_dir
+command="cd ${app_dir} && ${pumactl} $1 ${puma_config}"
+required_dirs=$app_dir
+
+start_cmd="${name}_start"
+stop_cmd="${name}_stop"
+restart_cmd="${name}_restart"
+status_cmd="${name}_status"
+
+{{app_name}}_start()
+{
+	cd ${app_dir}
+	${pumactl} start
+}
+
+{{app_name}}_stop()
+{
+	cd ${app_dir}
+	${pumactl} stop
+}
+
+{{app_name}}_restart()
+{
+	cd ${app_dir}
+	${pumactl} stop
+  sleep 4
+	${pumactl} start
+}
+
+{{app_name}}_status()
+{
+	cd ${app_dir}
+	${pumactl} status
+}
+
+load_rc_config $name
+run_rc_command "$@"

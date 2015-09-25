@@ -1,0 +1,63 @@
+---
+- hosts: applications
+  remote_user: "{{ app_user }}"
+
+  roles:
+    - role: rvm_io.rvm1-ruby
+      tags: ruby 
+      sudo: True
+      rvm1_install_flags: '--auto-dotfiles --user-install'
+      rvm1_install_path: "/home/{{ app_user }}/.rvm"
+      rvm1_rvm_check_for_updates: False
+      rvm1_user: '{{ app_user }}'
+      rvm1_rubies:
+        - '{{ ruby_version }}' 
+
+  tasks:
+  - name: check rvm owned by app_user
+    sudo: True
+    file: path=/home/{{ ansible_ssh_user }} state=directory owner={{ app_user }} recurse=yes
+
+  - name: install puma gem
+    shell: /home/{{ app_user }}/.rvm/bin/rvm all do gem install puma
+
+  - name: create wrapper
+    #shell: /home/{{ app_user }}/.rvm/bin/rvm wrapper {{ ruby_version }} pumactl
+    template:
+      src: templates/puma_wrapper.j2
+      dest: /home/{{ ansible_ssh_user }}/.rvm/wrappers/{{ ruby_version }}/pumactl
+
+  - name: install dependencies
+    sudo: True
+    pkgng:
+      pkg: node, cmake
+      state: present
+
+  - name: create app dir
+    file: path=/home/{{ ansible_ssh_user }}/{{ app_name }} state=directory
+
+  - name: create gemrc file
+    command: touch /home/{{ ansible_ssh_user }}/.gemrc
+    args:
+      creates: /home/{{ ansible_ssh_user }}/.gemrc
+
+  - name: add lines to gemrc
+    template:
+      src: templates/gemrc.j2
+      dest: /home/{{ ansible_ssh_user }}/.gemrc
+
+  - name: install puma rc.d
+    sudo: True
+    template:
+      src: templates/app_init.j2
+      dest: /usr/local/etc/rc.d/{{ app_name }} 
+      mode: 0755
+
+  - name: ensure puma is on rc.conf
+    sudo: True
+    lineinfile: dest=/etc/rc.conf line='{{ app_name }}_enable="YES"'
+
+  #- name: ensure puma is started
+  #  service:
+  #    name: '{{ app_name }}'
+  #    state: started

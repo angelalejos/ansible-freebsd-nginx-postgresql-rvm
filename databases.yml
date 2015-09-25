@@ -1,0 +1,26 @@
+---
+# TODO: db backup
+- hosts: databases
+  remote_user: "{{ app_user }}"
+  become: yes
+  become_user: root
+  become_method: su
+  tasks:
+  - name: install dependencies
+    pkgng:
+      pkg: postgresql93-client-9.3.9, py27-psycopg2-2.5.5, py27-pip-7.0.3, postgresql-libpqxx-4.0.1_1
+  - name: install python dependencies
+    pip: name=psycopg2
+  - name: ensure postgresql is at the present version
+    pkgng: name=postgresql93-server-9.3.9 state=present
+  - name: ensure postgresql is on rc.conf
+    lineinfile: dest=/etc/rc.conf line='postgresql_enable="YES"'
+  - name: create db directory
+    command: /usr/local/etc/rc.d/postgresql initdb
+    ignore_errors: yes
+  - name: ensure that postgresql is started
+    service: name=postgresql state=running
+  - name: Create default database
+    postgresql_db: name=pgsql login_user=pgsql
+  - name: Create rails user, grant privilege to create other databases and demote rails from super user status
+    postgresql_user: name={{ db_user }} password={{ db_password }} role_attr_flags=CREATEDB,NOSUPERUSER login_user=pgsql

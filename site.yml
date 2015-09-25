@@ -1,0 +1,20 @@
+---
+# TODO: nginx template, rc.d ruby command
+- hosts: all
+  remote_user: "{{ app_user }}"
+  become: yes
+  become_user: root
+  become_method: su
+  tasks:
+  - name: install default packages
+    pkgng:
+      pkg: vim-lite, bash, curl, sudo, gnupg20, git
+      state: present
+  - name: ensure default user present
+    user: name={{ app_user }} shell=/usr/local/bin/bash groups=wheel append=yes
+  - name: Allow members of group wheel to execute any command
+    lineinfile: dest=/usr/local/etc/sudoers line="%wheel	ALL=(ALL:ALL) ALL"
+
+- include: webservers.yml
+- include: databases.yml
+- include: applications.yml
